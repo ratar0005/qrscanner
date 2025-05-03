@@ -18,6 +18,7 @@ public class QrReader : MonoBehaviour
     int width, height;
     const float scanInterval = 1f;
     float lastScanTime = 0;
+    bool isReady;
 
 
     IEnumerator Start()
@@ -40,6 +41,7 @@ public class QrReader : MonoBehaviour
         height = webcamTexture.height;
         cameraTexture = new Texture2D(width, height, TextureFormat.RGB24, false);
 
+        isReady = true;
     }
 
     public void Read()
@@ -48,11 +50,13 @@ public class QrReader : MonoBehaviour
         if (webcamTexture == null || cameraTexture == null)
             return;
 
+        Debug.Log($"{webcamTexture.didUpdateThisFrame}");
 
-        cameraTexture.SetPixels32(webcamTexture.GetPixels32());
+        var pixels = webcamTexture.GetPixels32();
+        cameraTexture.SetPixels32(pixels);
         cameraTexture.Apply();
         var result = reader.Decode(
-                    cameraTexture.GetPixels32(),
+                    pixels,
                     width,
                     height
                 );
@@ -67,6 +71,9 @@ public class QrReader : MonoBehaviour
 
     private void Update()
     {
+        if (!isReady)
+            return;
+
         if (Time.time - lastScanTime >= scanInterval)
         {
 

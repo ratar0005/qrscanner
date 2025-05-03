@@ -46,7 +46,7 @@ public class WebCam : MonoBehaviour
     private IEnumerator DelayedCameraInitialization()
     {
         yield return null;
-        InitializeCamera();
+        StartCoroutine(InitializeCamera());
     }
 
     private void PermissionCallbacksPermissionDenied(string permissionName)
@@ -66,7 +66,7 @@ public class WebCam : MonoBehaviour
     void Start()
     {
 #if UNITY_IOS || UNITY_WEBGL
-        StartCoroutine(AskForPermissionIfRequired(UserAuthorization.WebCam, () => { InitializeCamera(); }));
+        StartCoroutine(AskForPermissionIfRequired(UserAuthorization.WebCam, () => { StartCoroutine(InitializeCamera()); }));
         return;
 #elif UNITY_ANDROID
         if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
@@ -75,17 +75,31 @@ public class WebCam : MonoBehaviour
             return;
         }
 #endif
-        InitializeCamera();
+        StartCoroutine(InitializeCamera());
     }
 
-    private void InitializeCamera()
+    private IEnumerator InitializeCamera()
     {
-        webcamTexture = new WebCamTexture();
-        
-        
-            renderer.texture = webcamTexture;
+        WebCamDevice[] devices = WebCamTexture.devices;
+        foreach (var device in devices)
+        {
+            if (device.isFrontFacing)
+            {
+                webcamTexture = new WebCamTexture(device.name);
+                Debug.Log($"front cam: {device.name}");
+                break;
+            }
+        }
+
+        if (webcamTexture == null)
+            webcamTexture = new WebCamTexture(500,500);
+
+        renderer.texture = webcamTexture;
 
         webcamTexture.Play();
+        while (webcamTexture.width < 100)
+            yield return null;
+
         IsInitiailized = true;
         Debug.Log($"dssds");
     }
